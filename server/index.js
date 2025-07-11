@@ -1,70 +1,77 @@
 import express from "express";
 import dotenv from "dotenv";
-import multer from "multer";
-import { fileURLToPath } from 'url';
-import path from 'path';
-import postRoute from './route/post.route.js'
-import commentRoutes from './route/comment.route.js'
+import cookieParser from "cookie-parser";
+import cors from 'cors';
+import connectDB from "./db/connectDB.js";
+
+// Routes
+import postRoute from './route/post.route.js';
+import commentRoutes from './route/comment.route.js';
 import authRoute from "./route/auth.route.js";
 import categoryRoute from "./route/category.route.js";
-import connectDB from "./db/connectDB.js";
-import cookieParser from "cookie-parser";
-import cors from 'cors'
-
-
-
-
+import uploadRoute from './route/upload.route.js';
 
 dotenv.config();
 const app = express();
-app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
-app.use(express.json());
+
+// ✅ Allow dev + prod frontend origins
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://blogify-blog.onrender.com',
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
+app.use(express.json({ limit: '2mb' }));
 app.use(cookieParser());
 
+// ✅ ROUTES
 app.use('/api/auth', authRoute);
 app.use('/api/categories', categoryRoute);
 app.use('/api/posts', postRoute);
 app.use('/api/comments', commentRoutes);
+app.use('/api/upload', uploadRoute);
+console.log("✅ Upload route is mounted at /api/upload");
 
-
-
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// STORAGE ENGIN
-const storage = multer.diskStorage({
-    destination: path.join(__dirname, 'uploads'),
-    limits: { fileSize: 2 * 1024 * 1024 }, //2mb
-
-    filename: (req, file, cb) => { cb(null, `${file.originalname}`); },
-});
-
-const upload = multer({ storage });
-
-app.post(`/api/upload`, upload.single('file'), (req, res) => {
-    if(!req.file){
-    return res.status(400).json({ error: 'No file uploaded', path: req.file.path });
-    }
-    return res.json({ message: 'file was uploaded', path: req.file.path });
-});
-
-// HANDLE ERROR
+// ✅ Error handler for Multer file size
 app.use((err, req, res, next) => {
-    if(err.code === 'LIMIT_FILE_SIZE'){
-        return res.status(413).json({
-            success: false, message: "File too large, Max size set at 2mb"
-        });
-    }
-
-    next();
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({
+      success: false,
+      message: "File too large. Max size is 2MB.",
+    });
+  }
+  next(err);
 });
 
-// SERVE UPLOAD FOLDER
-app.use(`/uploads`, express.static(path.join(__dirname, 'uploads')));
+// ✅ Global error handler
+app.use((err, req, res, next) => {
+  console.error("❌ Global error:", err);
 
-const port = process.env.PORT || 6000;
+  const message =
+    err?.details?.[0]?.message || // Joi or validation error
+    err?.message ||               // General error
+    'Something went wrong';       // Fallback
+
+  res.status(500).json({
+    success: false,
+    message,
+  });
+});
+
+// ✅ Start server
+const port = process.env.PORT || 9000;
 app.listen(port, () => {
-    connectDB();
-    console.log(`server running on port http://localhost:${port}`);
-})
+  connectDB();
+  console.log(`✅ Server running on http://localhost:${port}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+});

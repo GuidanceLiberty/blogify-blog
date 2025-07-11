@@ -25,49 +25,76 @@ export const checkAuth = async (req, res) => {
 }
 
 export const signup = async (req, res) => {
-    const { name, email, password, photo } = req.body;
-    //return console.log("Form Data: ", req.body);
-    //validate with schema
-    const { error } = signupSchema.validate({ name, email, password, });
+  const { name, email, password, photo } = req.body;
 
-    let image; //return console.log("FORM DATA : ", req.body);
-    if(photo?.length > 12){
-        image = photo.substring(12); //return console.log("Pic URL : ", photo, " ::: ", image);
+  // ✅ Log the incoming body
+  console.log("📥 Received signup data:", { name, email, password, photo });
+
+  // Validate with Joi schema
+  const { error } = signupSchema.validate({ name, email, password });
+
+  try {
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.details[0].message,
+      });
     }
 
-    try {
-        if(error){
-            return res.status(400).json({
-                success: false, message: error.details[0].message
-            });
-        }
-        const userExit = await User.findOne({ email });
-        if (userExit) {
-            return res.status(400).json({
-                success: false, message: 'User already exits'
-            })
-        }
-        const hashedPassword = await bcrypt.hash(password, 10);
-        // const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
-        const verificationToken = 123456
-        const user = new User({
-            name, email, password: hashedPassword, photo: image, verificationToken            
-        });
-        await user.save();
-        //JsonWebTokenError
-        generateTokenAndSetCookies(res, user._id);
-        // await sendVerificationEmail(user?.email, user?.name, verificationToken);
-
-        res.status(201).json({
-            success: true, message: 'Account was created successfully',
-            user: {...user._doc, password: undefined}
-        })
-    } catch (error) {
-        return res.json({
-            success: false, message: error.message
-        })
+    // Check if user already exists
+    const userExist = await User.findOne({ email });
+    if (userExist) {
+      return res.status(400).json({
+        success: false,
+        message: "User already exists",
+      });
     }
-}
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // ✅ Log the photo value specifically
+    console.log("🖼️ Profile photo URL received:", photo);
+
+    // Use full Cloudinary image URL
+    const image = photo;
+
+    // Generate verification token (placeholder for now)
+    const verificationToken = 123456;
+
+    // Create new user
+    const user = new User({
+      name,
+      email,
+      password: hashedPassword,
+      photo: image, // full Cloudinary URL
+      verificationToken,
+    });
+
+    await user.save();
+
+    // ✅ Log confirmation of user creation
+    console.log("✅ User created:", user);
+
+    // Set JWT cookie
+    generateTokenAndSetCookies(res, user._id);
+
+    res.status(201).json({
+      success: true,
+      message: "Account was created successfully",
+      user: { ...user._doc, password: undefined },
+    });
+
+  } catch (error) {
+    console.error("❌ Signup error:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
 
 
 export const login = async (req, res) => {
@@ -212,31 +239,33 @@ export const resetPassword = async (req, res) => {
 	}
 };
 
+// ✅ Replace your getProfile function with this:
 export const getProfile = async (req, res) => {
-    try {
-    const userId = req.user.id; 
-    const user = await User.findById(userId).select('-password'); 
+  try {
+    const userId = req.params.user_id;
+
+    const user = await User.findById(userId)
+      .select('-password')
+      .populate('posts'); // ✅ Only populate what exists
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    
     const profile = {
-      username: user.username,
+      name: user.name,
       email: user.email,
       role: user.role,
+      photo: user.photo,
       lastLogin: user.lastLogin,
-      noOfPosts: user.posts.length,
-      noOfLikedPosts: user.likedPosts.length,
-      noOfComments: user.comments.length,
       isVerified: user.isVerified,
-      joinedDate: user.createdAt, 
+      joinedDate: user.createdAt,
+      noOfPosts: user.posts?.length || 0,
     };
 
-    return res.status(200).json(profile);
+    return res.status(200).json({ data: profile });
   } catch (err) {
-    console.error(err);
+    console.error("❌ Error fetching profile:", err);
     return res.status(500).json({ message: 'Server error' });
   }
 };

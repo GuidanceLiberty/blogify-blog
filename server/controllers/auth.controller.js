@@ -1,4 +1,7 @@
 import { User } from "../models/User.js"
+import { Post } from '../models/Post.js';
+import { Comment } from "../models/Comment.js"; 
+
 import bcrypt from 'bcryptjs';
 import { generateTokenAndSetCookies } from "../utils/generateTokenAndSetCookies.js";
 import { loginSchema, signupSchema } from "../schema/Index.js";
@@ -244,14 +247,19 @@ export const getProfile = async (req, res) => {
   try {
     const userId = req.params.user_id;
 
-    const user = await User.findById(userId)
-      .select('-password')
-      .populate('posts'); // ✅ Only populate what exists
-
+    // Get user
+    const user = await User.findById(userId).select('-password');
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
 
+    // Get total posts created by user
+    const totalPosts = await Post.countDocuments({ author: userId });
+
+    // Get total comments made by user
+    const totalComments = await Comment.countDocuments({ author: userId });
+
+    // Create final profile response
     const profile = {
       name: user.name,
       email: user.email,
@@ -259,14 +267,16 @@ export const getProfile = async (req, res) => {
       photo: user.photo,
       lastLogin: user.lastLogin,
       isVerified: user.isVerified,
-      joinedDate: user.createdAt,
-      noOfPosts: user.posts?.length || 0,
+      createdAt: user.createdAt,
+      totalPosts,
+      totalComments,
+      likes: user.likes || [],
     };
 
-    return res.status(200).json({ data: profile });
+    return res.status(200).json({ success: true, data: profile });
   } catch (err) {
     console.error("❌ Error fetching profile:", err);
-    return res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 

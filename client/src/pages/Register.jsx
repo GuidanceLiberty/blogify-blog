@@ -1,5 +1,4 @@
 import { Link, useNavigate } from "react-router-dom";
-import authBG from "../assets/images/auth-bg.jpg";
 import { FaEnvelope, FaImage, FaUnlockAlt, FaUserPlus } from "react-icons/fa";
 import { useState } from "react";
 import { useFormik } from "formik";
@@ -23,7 +22,7 @@ const Register = () => {
     setFile(selectedFile);
 
     const formData = new FormData();
-    formData.append("image", selectedFile); // must match backend field
+    formData.append("image", selectedFile);
 
     try {
       setUploading(true);
@@ -44,14 +43,11 @@ const Register = () => {
 
   const onSubmit = async (values, actions) => {
     if (!photoURL) {
-      toast.error("Please upload a profile photo first.");
+      toast.error("Please upload a profile photo.");
       return;
     }
 
-    const payload = {
-      ...values,
-      photo: photoURL,
-    };
+    const payload = { ...values, photo: photoURL };
 
     try {
       const response = await fetch(`${URL}/auth/signup`, {
@@ -94,127 +90,107 @@ const Register = () => {
   });
 
   return (
-    <main className="login-div">
-      <div className="auth-left">
-        <img src={authBG} alt="auth background" />
-        <div className="auth-form !h-[95%]">
-          <div className="w-full max-w-sm mx-auto">
-            <h1 className="font-roboto text-2xl font-light tracking-medium text-center text-primary mb-8">
-              Create New Account
-            </h1>
+    <main className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="w-full max-w-2xl bg-white rounded-xl shadow-md p-6">
+        <h1 className="text-2xl font-semibold text-center mb-6 text-gray-800">Create New Account</h1>
 
-            <form onSubmit={handleSubmit}>
-              <div className="flex flex-col mb-6 w-full">
-                <label htmlFor="name" className="label">
-                  <FaUserPlus />
-                  <span>
-                    FullName <span className="req">*</span>
-                  </span>
-                  {touched.name && errors.name && (
-                    <p className="form-error">{errors.name}</p>
-                  )}
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  placeholder="Enter Fullname"
-                  className="text-input-reg"
-                  value={values.name}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                />
-              </div>
-
-              <div className="flex flex-col mb-6 w-full">
-                <label htmlFor="email" className="label">
-                  <FaEnvelope />
-                  <span>
-                    Email <span className="req">*</span>
-                  </span>
-                  {touched.email && errors.email && (
-                    <p className="form-error">{errors.email}</p>
-                  )}
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  placeholder="Enter Email"
-                  className="text-input"
-                  value={values.email}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                />
-              </div>
-
-              <div className="flex flex-col mb-6 w-full">
-                <label htmlFor="password" className="label">
-                  <FaUnlockAlt />
-                  <span>
-                    Password <span className="req">*</span>
-                  </span>
-                  {touched.password && errors.password && (
-                    <p className="form-error">{errors.password}</p>
-                  )}
-                </label>
-                <input
-                  type="password"
-                  id="password"
-                  placeholder="Enter Password"
-                  className="text-input"
-                  value={values.password}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                />
-              </div>
-
-              <div className="flex flex-col mb-6 w-full">
-                <label htmlFor="photo" className="label">
-                  <FaImage /> Profile Photo
-                </label>
-                <input
-                  type="file"
-                  id="photo"
-                  accept=".png, .jpeg, .jpg, .gif"
-                  className="text-input-reg"
-                  onChange={handleFileChange}
-                />
-                {file && (
-                  <img
-                    src={window.URL.createObjectURL(file)} // ✅ fixed here
-                    alt="preview"
-                    className="mt-2 rounded-md w-20 h-20 object-cover"
-                  />
-                )}
-              </div>
-
-              <Link
-                to="/forget-password"
-                className="text-sm text-primary mb-4 block text-right"
-              >
-                Forgot password?
-              </Link>
-
-              <button
-                type="submit"
-                className="btn-dark-full"
-                disabled={isSubmitting || uploading}
-              >
-                {isSubmitting || uploading ? (
-                  <Loader className="animate-spin" />
-                ) : (
-                  <span className="flex items-center gap-2">Sign Up</span>
-                )}
-              </button>
-
-              <p className="text-sm font-semibold text-[#5a7184] mt-4 text-center">
-                Already have an account?{" "}
-                <Link to="/login" className="text-primary">
-                  Login now
-                </Link>
-              </p>
-            </form>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Fullname */}
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium mb-1 text-gray-700">
+              <span className="flex items-center gap-2">
+                <FaUserPlus /> Full Name <span className="text-red-500">*</span>
+              </span>
+            </label>
+            <input
+              type="text"
+              id="name"
+              placeholder="Enter your full name"
+              className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              value={values.name}
+              onChange={handleChange}
+              onBlur={handleBlur}
+            />
+            {touched.name && errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
           </div>
-        </div>
+
+          {/* Email */}
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium mb-1 text-gray-700">
+              <span className="flex items-center gap-2">
+                <FaEnvelope /> Email <span className="text-red-500">*</span>
+              </span>
+            </label>
+            <input
+              type="email"
+              id="email"
+              placeholder="Enter your email"
+              className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              value={values.email}
+              onChange={handleChange}
+              onBlur={handleBlur}
+            />
+            {touched.email && errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
+          </div>
+
+          {/* Password */}
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium mb-1 text-gray-700">
+              <span className="flex items-center gap-2">
+                <FaUnlockAlt /> Password <span className="text-red-500">*</span>
+              </span>
+            </label>
+            <input
+              type="password"
+              id="password"
+              placeholder="Enter your password"
+              className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              value={values.password}
+              onChange={handleChange}
+              onBlur={handleBlur}
+            />
+            {touched.password && errors.password && (
+              <p className="text-red-500 text-sm">{errors.password}</p>
+            )}
+          </div>
+
+          {/* Profile Photo */}
+          <div>
+            <label htmlFor="photo" className="block text-sm font-medium mb-1 text-gray-700">
+              <span className="flex items-center gap-2"><FaImage /> Profile Photo</span>
+            </label>
+            <input
+              type="file"
+              id="photo"
+              accept=".png, .jpeg, .jpg, .gif"
+              onChange={handleFileChange}
+              className="w-full text-sm"
+            />
+            {file && (
+              <img
+                src={window.URL.createObjectURL(file)}
+                alt="preview"
+                className="mt-2 rounded-md w-20 h-20 object-cover"
+              />
+            )}
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            className="w-full bg-primary text-white py-2 rounded-lg flex items-center justify-center gap-2 font-semibold hover:bg-primary-dark transition"
+            disabled={isSubmitting || uploading}
+          >
+            {isSubmitting || uploading ? <Loader className="animate-spin" /> : "Sign Up"}
+          </button>
+
+          <p className="text-sm text-center text-gray-600">
+            Already have an account?{" "}
+            <Link to="/login" className="text-primary font-medium hover:underline">
+              Login now
+            </Link>
+          </p>
+        </form>
       </div>
     </main>
   );

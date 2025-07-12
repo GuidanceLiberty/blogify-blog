@@ -19,9 +19,11 @@ router.post('/logout', logout);
 
 
 
+
+
 router.get('/', getUsers);
 
-router.get('/', getUser);
+router.get('/:user_id', getUser);
 
 
 export default router;
